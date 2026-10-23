@@ -60,17 +60,17 @@
           <label><input type="radio" name="color" value="b"> Nero</label>
           <label><input type="radio" name="color" value="random"> Casuale</label>
         </fieldset>
-        <label class="field">Forza di Stockfish: <output data-out="elo">1500</output> Elo
-          <input type="range" name="elo" min="1350" max="2850" step="50" value="1500">
+        <label class="field">Livello di Stockfish: <output data-level="level"></output>
+          <input type="range" name="level" min="1" max="10" step="1" value="4">
         </label>
       </div>
 
       <div data-for="eve" hidden>
-        <label class="field">Elo del bianco: <output data-out="eloW">2000</output>
-          <input type="range" name="eloW" min="1350" max="2850" step="50" value="2000">
+        <label class="field">Livello del bianco: <output data-level="levelW"></output>
+          <input type="range" name="levelW" min="1" max="10" step="1" value="7">
         </label>
-        <label class="field">Elo del nero: <output data-out="eloB">2000</output>
-          <input type="range" name="eloB" min="1350" max="2850" step="50" value="2000">
+        <label class="field">Livello del nero: <output data-level="levelB"></output>
+          <input type="range" name="levelB" min="1" max="10" step="1" value="7">
         </label>
         <label class="field">Pausa tra le mosse
           <select name="delay">

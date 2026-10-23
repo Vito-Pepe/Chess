@@ -4,6 +4,10 @@ import { Chess } from './vendor/chess.js';
 const GLYPH = { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟︎' };
 const FILES = 'abcdefgh';
 const MODE_NAMES = { pvp: '2 giocatori', pve: 'Vs Stockfish', eve: 'Stockfish vs Stockfish' };
+// Livelli di Stockfish, dal più scarso al più forte (la forza vera è definita in server/server.py)
+const LEVEL_NAMES = [, 'Principiante', 'Novizio', 'Facile', 'Dilettante', 'Intermedio',
+  'Giocatore di circolo', 'Esperto', 'Maestro', 'Gran maestro', 'Massimo (piena forza)'];
+const levelName = (n) => `${n} · ${LEVEL_NAMES[n]}`;
 
 const $ = (sel) => document.querySelector(sel);
 const boardEl = $('#board');
@@ -12,9 +16,9 @@ const game = new Chess();
 const state = {
   mode: 'pve',
   human: 'w',          // colore del giocatore in modalità pve
-  elo: 1500,
-  eloW: 2000,
-  eloB: 2000,
+  level: 4,
+  levelW: 7,
+  levelB: 7,
   movetime: 500,
   delay: 1000,
   orientation: 'w',
@@ -142,8 +146,8 @@ function renderStatus() {
   err.textContent = state.error ?? '';
 
   let label = MODE_NAMES[state.mode];
-  if (state.mode === 'pve') label += ` · giochi col ${state.human === 'w' ? 'bianco' : 'nero'} · ${state.elo} Elo`;
-  if (state.mode === 'eve') label += ` · ${state.eloW} vs ${state.eloB} Elo`;
+  if (state.mode === 'pve') label += ` · giochi col ${state.human === 'w' ? 'bianco' : 'nero'} · livello ${levelName(state.level)}`;
+  if (state.mode === 'eve') label += ` · livello ${state.levelW} vs ${state.levelB}`;
   $('#mode-label').textContent = label;
 
   const total = game.history().length;
@@ -296,7 +300,7 @@ $('#btn-hint').addEventListener('click', async () => {
   state.error = null;
   renderStatus();
   try {
-    // senza "elo": Stockfish gioca alla massima forza
+    // senza "level": Stockfish gioca alla massima forza
     const res = await fetch('api/move', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -338,7 +342,7 @@ function scheduleEngine() {
 async function engineMove() {
   if (!engineToMove() || state.thinking) return;
   const id = state.runId;
-  const elo = state.mode === 'eve' ? (game.turn() === 'w' ? state.eloW : state.eloB) : state.elo;
+  const level = state.mode === 'eve' ? (game.turn() === 'w' ? state.levelW : state.levelB) : state.level;
   state.thinking = true;
   state.error = null;
   renderStatus();
@@ -346,7 +350,7 @@ async function engineMove() {
     const res = await fetch('api/move', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fen: game.fen(), elo, movetime: state.movetime }),
+      body: JSON.stringify({ fen: game.fen(), level, movetime: state.movetime }),
     });
     const data = await res.json().catch(() => ({}));
     if (id !== state.runId) return;
@@ -437,8 +441,8 @@ function syncNewForm() {
   for (const el of formNew.querySelectorAll('[data-for]')) {
     el.hidden = !el.dataset.for.split(' ').includes(mode);
   }
-  for (const out of formNew.querySelectorAll('output[data-out]')) {
-    out.value = formNew.elements[out.dataset.out].value;
+  for (const out of formNew.querySelectorAll('output[data-level]')) {
+    out.value = levelName(+formNew.elements[out.dataset.level].value);
   }
 }
 formNew.addEventListener('input', syncNewForm);
@@ -454,9 +458,9 @@ dlgNew.addEventListener('close', () => {
   newGame({
     mode: f.mode.value,
     human: f.color.value,
-    elo: +f.elo.value,
-    eloW: +f.eloW.value,
-    eloB: +f.eloB.value,
+    level: +f.level.value,
+    levelW: +f.levelW.value,
+    levelB: +f.levelB.value,
     movetime: +f.movetime.value,
     delay: +f.delay.value,
   });

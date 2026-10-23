@@ -2,9 +2,9 @@
 
 Gioco di scacchi per uso personale, pensato per girare su un Raspberry Pi 5, con Stockfish come avversario.
 
-- **Vs Stockfish**: scegli bianco, nero o casuale, forza (1350–2850 Elo) e tempo di riflessione.
+- **Vs Stockfish**: scegli bianco, nero o casuale, livello da 1 (Principiante) a 10 (piena forza) e tempo di riflessione.
 - **2 giocatori** sullo stesso dispositivo.
-- **Stockfish vs Stockfish**: Elo diverso per i due lati, pausa tra le mosse, pausa/stop.
+- **Stockfish vs Stockfish**: livello diverso per i due lati, pausa tra le mosse, pausa/stop.
 - **Colori personalizzabili** di pezzi e case (preset inclusi), salvati nel browser.
 - **Rivedi la partita** mossa per mossa (⏮ ◀ ▶ ⏭, frecce della tastiera o clic su una mossa della lista).
 - **Consiglia mossa**: Stockfish alla massima forza suggerisce la mossa a chi deve muovere, bianco o nero.
@@ -21,7 +21,7 @@ web/                 # frontend statico (index.html, style.css, app.js)
 server/              # API Stockfish (Python, solo libreria standard)
 ```
 
-API: `POST /api/move` con `{"fen": "...", "elo": 1500, "movetime": 500}` → `{"move": "e2e4"}` (`null` se non ci sono mosse). Senza `elo` Stockfish gioca alla massima forza. `GET /api/health` → `{"ok": true}`.
+API: `POST /api/move` con `{"fen": "...", "level": 4, "movetime": 500}` → `{"move": "e2e4"}` (`null` se non ci sono mosse). `level` va da 1 a 10 (tabella `LEVELS` in `server/server.py`); senza `level` Stockfish gioca alla massima forza. `GET /api/health` → `{"ok": true}`.
 
 ## Deploy sul Raspberry Pi 5
 
