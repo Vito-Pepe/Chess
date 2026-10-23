@@ -8,6 +8,7 @@ Gioco di scacchi per uso personale, pensato per girare su un Raspberry Pi 5, con
 - **Colori personalizzabili** di pezzi e case (preset inclusi), salvati nel browser.
 - **Rivedi la partita** mossa per mossa (⏮ ◀ ▶ ⏭, frecce della tastiera o clic su una mossa della lista).
 - **Consiglia mossa**: Stockfish alla massima forza suggerisce la mossa a chi deve muovere, bianco o nero.
+- **Posizione libera**: metti i pezzi dove vuoi trascinandoli (o a tocchi), scegli chi muove e chiedi a Stockfish a piena forza la mossa migliore (1, 3 o 5 s di analisi). Si può partire da zero, dalla posizione iniziale o dalla partita in corso ("Modifica posizione").
 
 Le regole (mosse legali, scacco matto, patte) sono gestite nel browser da [chess.js](https://github.com/jhlywa/chess.js) 1.0.0 (licenza BSD-2-Clause, copiato in `web/vendor/`). Stockfish gira in un piccolo servizio Python che serve una richiesta alla volta, per non sovraccaricare il Pi.
 

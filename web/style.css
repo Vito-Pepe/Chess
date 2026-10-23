@@ -36,6 +36,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 
 body {
   margin: 0;
@@ -253,6 +254,36 @@ select { font: inherit; padding: 6px; border-radius: 6px; }
   justify-content: center;
 }
 .promo-choices .piece { font-size: 48px; }
+
+.note { font-size: 0.9rem; color: var(--muted); margin: 0 0 14px; }
+
+/* ---------- posizione libera ---------- */
+
+.edit-help { font-size: 0.85rem; color: var(--muted); margin: 0 0 10px; }
+.palette { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-bottom: 6px; }
+.palette button, button.erase { touch-action: none; }
+.palette button {
+  aspect-ratio: 1;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--light-square);
+}
+.palette .piece { font-size: 32px; }
+.palette button.active, button.erase.active { outline: 3px solid var(--accent); outline-offset: -1px; }
+button.erase { width: 100%; margin-bottom: 12px; }
+.edit-turn { margin-bottom: 10px; }
+.board.editing, .board.editing .sq { touch-action: none; }
+.piece.lifted { opacity: 0.3; }
+.piece.ghost {
+  position: fixed;
+  left: 0;
+  top: 0;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 100;
+}
 
 .color-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .color-grid label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
