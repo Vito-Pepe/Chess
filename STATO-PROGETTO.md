@@ -4,14 +4,13 @@ Ultimo aggiornamento: 2026-10-23. Serve per riprendere il lavoro in una nuova se
 
 ## Obiettivo
 
-Gioco di scacchi per uso personale sul Raspberry Pi 5, con Stockfish come avversario. Modalità: vs Stockfish (colore bianco/nero/casuale, livello 1–10, tempo di riflessione), 2 giocatori sullo stesso dispositivo, Stockfish vs Stockfish (livello per lato, pausa tra le mosse, pausa/stop). Colori di pezzi e case personalizzabili, salvati nel browser. Si può rivedere la partita mossa per mossa (⏮ ◀ ▶ ⏭, frecce della tastiera, clic sulla lista mosse) e chiedere a Stockfish la mossa consigliata per chi deve muovere.
+Gioco di scacchi per uso personale sul Raspberry Pi 5, con Stockfish come avversario. Modalità: vs Stockfish (colore bianco/nero/casuale, livello 1–10, tempo di riflessione), 2 giocatori sullo stesso dispositivo, Stockfish vs Stockfish (livello per lato, pausa tra le mosse, pausa/stop). Colori di pezzi e case personalizzabili, salvati nel browser. Si può rivedere la partita mossa per mossa (⏮ ◀ ▶ ⏭, frecce della tastiera, clic sulla lista mosse) e chiedere a Stockfish la mossa consigliata per chi deve muovere. Modalità **Posizione libera**: editor della scacchiera (trascinamento con mouse e dita, oppure tocco pezzo + case, gomma, re unico per colore), scelta di chi muove, consiglio di Stockfish a piena forza (1/3/5 s) ed esecuzione della mossa consigliata. Ci si entra dal dialogo "Nuova partita" o con "Modifica posizione" durante una partita.
 
 ## Stato attuale
 
-- Prima versione in `main` (PR #1). Revisione mosse, mossa consigliata e livelli 1–10 nella PR #2.
-- Provato in cloud: API con Stockfish 16, interfaccia con Playwright (mosse, promozione, matto, annulla, SvS con pausa/stop, colori, errore di rete, layout telefono, revisione mosse, mossa consigliata per bianco e nero).
-- **Non ancora provato**: build Docker e avvio con `docker compose` sul Pi (in cloud non c'è Docker).
-- Da fare sul Pi dopo l'unione della PR: clone, `docker compose up --build -d`, riga di cron (vedi sotto).
+- **In produzione sul Pi** dal 2026-10-23: tutto in `main` (PR #1 prima versione, PR #2 revisione mosse, mossa consigliata e livelli 1–10). Cron di `update.sh` attivo.
+- Provato in cloud: API con Stockfish 16, interfaccia con Playwright (mosse, promozione, matto, annulla, SvS con pausa/stop, colori, errore di rete, layout telefono, revisione mosse, mossa consigliata per bianco e nero, livelli, editor di posizione con mouse, tocchi e trascinamento touch).
+- Provato sul Pi: build Docker, `docker compose`, API e gioco funzionano.
 
 ## Architettura
 
@@ -22,6 +21,8 @@ Gioco di scacchi per uso personale sul Raspberry Pi 5, con Stockfish come avvers
 | Servizio web | `Dockerfile`, `nginx.conf` | nginx:alpine, serve `web/` e inoltra `/api/` a `stockfish:8000` (resolver Docker, parte anche se Stockfish non è pronto). |
 | Compose | `docker-compose.yml` | Servizi `web` (porta **8085**) e `stockfish` (`cpus: 2`, `SF_THREADS=2`, `SF_HASH_MB=64`). |
 | Aggiornamento | `update.sh` | Come nelle altre repo: se ci sono commit nuovi sul branch corrente fa pull, rebuild, riavvio. |
+
+Editor (`web/app.js`, sezione "posizione libera"): la posizione è una mappa casa → pezzo; la FEN si costruisce al volo (arrocco dedotto da re e torri nelle case iniziali, niente en passant). Prima di chiedere la mossa controlla: un re per colore, nessun pedone in prima/ottava, re di chi non muove non sotto scacco, niente matto/stallo.
 
 API: `POST /api/move` `{"fen", "level", "movetime"}` → `{"move": "e2e4"}` (`null` se non ci sono mosse legali). Senza `level` gioca alla massima forza: lo usa "Consiglia mossa" (1 s di riflessione). Accetta anche `elo` (1350–2850), non usato dall'interfaccia.
 
@@ -90,6 +91,6 @@ Come per le altre repo: modifiche su un branch, pull request verso `main`, union
 ## Da fare
 
 - [x] Unire la PR #1.
-- [ ] Unire la PR #2 e fare il primo deploy sul Pi.
-- [ ] Aggiungere la riga di cron per `update.sh`.
+- [x] Unire la PR #2 e fare il primo deploy sul Pi.
+- [x] Aggiungere la riga di cron per `update.sh`.
 - [ ] (Opzionale) Riquadro Scacchi nella homepage: una riga in `app/apps.js` della repo homepage con `lanPort: 8085`.
