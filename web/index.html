@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scacchi</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="layout">
+    <section class="board-wrap">
+      <div id="board" class="board" role="grid" aria-label="Scacchiera"></div>
+    </section>
+
+    <aside class="side">
+      <h1>Scacchi</h1>
+      <p id="mode-label" class="mode-label"></p>
+      <p id="status" class="status" aria-live="polite"></p>
+      <p id="error" class="error" hidden></p>
+
+      <div class="controls">
+        <button id="btn-new" type="button">Nuova partita</button>
+        <button id="btn-undo" type="button">Annulla mossa</button>
+        <button id="btn-flip" type="button">Gira scacchiera</button>
+        <button id="btn-pause" type="button" hidden>Pausa</button>
+        <button id="btn-stop" type="button" hidden>Stop</button>
+        <button id="btn-retry" type="button" hidden>Riprova</button>
+        <button id="btn-colors" type="button">Colori</button>
+      </div>
+
+      <ol id="moves" class="moves"></ol>
+    </aside>
+  </main>
+
+  <dialog id="dlg-new">
+    <form id="form-new" method="dialog">
+      <h2>Nuova partita</h2>
+
+      <fieldset class="segmented">
+        <legend>Modalità</legend>
+        <label><input type="radio" name="mode" value="pve" checked> Vs Stockfish</label>
+        <label><input type="radio" name="mode" value="pvp"> 2 giocatori</label>
+        <label><input type="radio" name="mode" value="eve"> Stockfish vs Stockfish</label>
+      </fieldset>
+
+      <div data-for="pve">
+        <fieldset class="segmented">
+          <legend>Il tuo colore</legend>
+          <label><input type="radio" name="color" value="w" checked> Bianco</label>
+          <label><input type="radio" name="color" value="b"> Nero</label>
+          <label><input type="radio" name="color" value="random"> Casuale</label>
+        </fieldset>
+        <label class="field">Forza di Stockfish: <output data-out="elo">1500</output> Elo
+          <input type="range" name="elo" min="1350" max="2850" step="50" value="1500">
+        </label>
+      </div>
+
+      <div data-for="eve" hidden>
+        <label class="field">Elo del bianco: <output data-out="eloW">2000</output>
+          <input type="range" name="eloW" min="1350" max="2850" step="50" value="2000">
+        </label>
+        <label class="field">Elo del nero: <output data-out="eloB">2000</output>
+          <input type="range" name="eloB" min="1350" max="2850" step="50" value="2000">
+        </label>
+        <label class="field">Pausa tra le mosse
+          <select name="delay">
+            <option value="500">0,5 s</option>
+            <option value="1000" selected>1 s</option>
+            <option value="2000">2 s</option>
+            <option value="3000">3 s</option>
+          </select>
+        </label>
+        <p class="warn">Stockfish vs Stockfish tiene il processore del Raspberry Pi sotto carico
+          per tutta la partita: usa un dissipatore attivo e tieni d'occhio la temperatura
+          (<code>vcgencmd measure_temp</code>).</p>
+      </div>
+
+      <label class="field" data-for="pve eve">Tempo di riflessione per mossa
+        <select name="movetime">
+          <option value="200">0,2 s</option>
+          <option value="500" selected>0,5 s</option>
+          <option value="1000">1 s</option>
+          <option value="2000">2 s</option>
+          <option value="5000">5 s</option>
+        </select>
+      </label>
+
+      <div class="dlg-actions">
+        <button value="cancel" formnovalidate>Annulla</button>
+        <button value="ok" class="primary">Inizia</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dlg-promo">
+    <h2>Promozione</h2>
+    <div id="promo-choices" class="promo-choices"></div>
+  </dialog>
+
+  <dialog id="dlg-colors">
+    <form method="dialog">
+      <h2>Colori</h2>
+      <div class="color-grid">
+        <label>Pezzi bianchi <input type="color" data-color="whitePiece"></label>
+        <label>Pezzi neri <input type="color" data-color="blackPiece"></label>
+        <label>Case chiare <input type="color" data-color="lightSquare"></label>
+        <label>Case scure <input type="color" data-color="darkSquare"></label>
+      </div>
+      <p class="presets-label">Preset</p>
+      <div id="presets" class="presets"></div>
+      <div class="dlg-actions">
+        <button type="button" id="btn-colors-reset">Ripristina</button>
+        <button value="ok" class="primary">Chiudi</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
