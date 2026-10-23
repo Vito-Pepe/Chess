@@ -1,0 +1,17 @@
+services:
+  web:
+    build: .
+    ports:
+      - "80:80"
+    depends_on:
+      - stockfish
+    restart: unless-stopped
+
+  stockfish:
+    build: ./server
+    environment:
+      SF_THREADS: "2"
+      SF_HASH_MB: "64"
+    # Limita il carico sul Pi (4 core): Stockfish usa al massimo 2 core.
+    cpus: 2
+    restart: unless-stopped
