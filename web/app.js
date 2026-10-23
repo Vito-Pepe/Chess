@@ -25,7 +25,18 @@ const state = {
   error: null,
   runId: 0,            // cambia a ogni nuova partita/annulla: le risposte vecchie vengono ignorate
   timer: null,
+  view: null,          // null = posizione attuale, altrimenti numero di semimosse mostrate
+  hint: null,          // { fen, from, to, san } consigliata da Stockfish
+  hinting: false,
 };
+
+// Posizione mostrata: quella attuale o una precedente se si stanno rivedendo le mosse.
+function shown() {
+  if (state.view === null) return game;
+  const g = new Chess();
+  for (const san of game.history().slice(0, state.view)) g.move(san);
+  return g;
+}
 
 // ---------------------------------------------------------------- scacchiera
 
@@ -48,19 +59,25 @@ function pieceSpan(color, type) {
   return span;
 }
 
+function currentHint() {
+  return state.view === null && state.hint && state.hint.fen === game.fen() ? state.hint : null;
+}
+
 function renderBoard() {
-  const last = game.history({ verbose: true }).at(-1);
+  const g = shown();
+  const last = g.history({ verbose: true }).at(-1);
+  const hint = currentHint();
   const targets = new Map();
   if (state.selected) {
-    for (const m of game.moves({ square: state.selected, verbose: true })) {
+    for (const m of g.moves({ square: state.selected, verbose: true })) {
       targets.set(m.to, m.captured !== undefined);
     }
   }
   let checkSq = null;
-  if (game.inCheck()) {
-    for (const row of game.board()) {
+  if (g.inCheck()) {
+    for (const row of g.board()) {
       for (const p of row) {
-        if (p && p.type === 'k' && p.color === game.turn()) checkSq = p.square;
+        if (p && p.type === 'k' && p.color === g.turn()) checkSq = p.square;
       }
     }
   }
@@ -74,11 +91,12 @@ function renderBoard() {
     if (last && (sq === last.from || sq === last.to)) btn.classList.add('last');
     if (sq === state.selected) btn.classList.add('selected');
     if (sq === checkSq) btn.classList.add('check');
+    if (hint && (sq === hint.from || sq === hint.to)) btn.classList.add('suggest');
     if (targets.has(sq)) {
       btn.classList.add('hint');
       if (targets.get(sq)) btn.classList.add('capture');
     }
-    const p = game.get(sq);
+    const p = g.get(sq);
     btn.setAttribute('aria-label', sq + (p ? ` ${p.color === 'w' ? 'bianco' : 'nero'} ${p.type}` : ''));
     if (p) btn.append(pieceSpan(p.color, p.type));
     if (col === 0) btn.append(coord('rank', rank));
@@ -128,9 +146,24 @@ function renderStatus() {
   if (state.mode === 'eve') label += ` · ${state.eloW} vs ${state.eloB} Elo`;
   $('#mode-label').textContent = label;
 
+  const total = game.history().length;
+  const ply = state.view ?? total;
+  const viewText = $('#view-text');
+  viewText.hidden = state.view === null;
+  viewText.textContent = `Stai rivedendo la partita (semimossa ${ply} di ${total}). Premi ⏭ per tornare alla posizione attuale.`;
+  $('#nav-start').disabled = $('#nav-prev').disabled = ply === 0;
+  $('#nav-next').disabled = $('#nav-end').disabled = state.view === null;
+
+  const hint = currentHint();
+  const hintText = $('#hint-text');
+  hintText.hidden = !hint && !state.hinting;
+  hintText.textContent = state.hinting ? 'Stockfish cerca la mossa migliore…' : hint ? `Mossa consigliata: ${hint.san}` : '';
+
   const finished = !!over || state.stopped;
+  $('#btn-hint').hidden = state.mode === 'eve';
+  $('#btn-hint').disabled = !humanCanMove() || state.hinting;
   $('#btn-undo').hidden = state.mode === 'eve';
-  $('#btn-undo').disabled = game.history().length === 0;
+  $('#btn-undo').disabled = total === 0;
   $('#btn-pause').hidden = state.mode !== 'eve' || finished;
   $('#btn-pause').textContent = state.paused ? 'Riprendi' : 'Pausa';
   $('#btn-stop').hidden = state.mode !== 'eve' || finished;
@@ -140,19 +173,51 @@ function renderStatus() {
 function renderMoves() {
   const list = $('#moves');
   const sans = game.history();
+  const current = state.view ?? sans.length;
   const frag = document.createDocumentFragment();
   for (let i = 0; i < sans.length; i += 2) {
     const li = document.createElement('li');
-    for (const san of sans.slice(i, i + 2)) {
+    sans.slice(i, i + 2).forEach((san, j) => {
       const s = document.createElement('span');
       s.textContent = san;
+      s.dataset.ply = i + j + 1;
+      if (i + j + 1 === current) s.classList.add('current');
       li.append(s);
-    }
+    });
     frag.append(li);
   }
   list.replaceChildren(frag);
-  list.scrollTop = list.scrollHeight;
+  const cur = list.querySelector('.current');
+  if (state.view === null) list.scrollTop = list.scrollHeight;
+  else cur?.scrollIntoView({ block: 'nearest' });
 }
+
+// ---------------------------------------------------------------- rivedere le mosse
+
+function setView(ply) {
+  const total = game.history().length;
+  ply = Math.max(0, Math.min(total, ply));
+  state.view = ply === total ? null : ply;
+  state.selected = null;
+  render();
+}
+
+$('#moves').addEventListener('click', (e) => {
+  const s = e.target.closest('span[data-ply]');
+  if (s) setView(+s.dataset.ply);
+});
+$('#nav-start').addEventListener('click', () => setView(0));
+$('#nav-prev').addEventListener('click', () => setView((state.view ?? game.history().length) - 1));
+$('#nav-next').addEventListener('click', () => setView((state.view ?? game.history().length) + 1));
+$('#nav-end').addEventListener('click', () => setView(Infinity));
+
+document.addEventListener('keydown', (e) => {
+  if (document.querySelector('dialog[open]') || e.target.closest('input, select, textarea')) return;
+  if (e.key === 'ArrowLeft') setView((state.view ?? game.history().length) - 1);
+  else if (e.key === 'ArrowRight') setView((state.view ?? game.history().length) + 1);
+  else return;
+  e.preventDefault();
+});
 
 function render() {
   renderBoard();
@@ -163,7 +228,7 @@ function render() {
 // ---------------------------------------------------------------- mosse del giocatore
 
 function humanCanMove() {
-  if (game.isGameOver() || state.stopped || state.thinking) return false;
+  if (game.isGameOver() || state.stopped || state.thinking || state.view !== null) return false;
   if (state.mode === 'pvp') return true;
   if (state.mode === 'pve') return game.turn() === state.human;
   return false;
@@ -214,9 +279,44 @@ function askPromotion(color) {
 
 function afterMove() {
   state.error = null;
+  state.hint = null;
   render();
   scheduleEngine();
 }
+
+// ---------------------------------------------------------------- mossa consigliata
+
+const HINT_MOVETIME = 1000;
+
+$('#btn-hint').addEventListener('click', async () => {
+  if (!humanCanMove() || state.hinting) return;
+  const fen = game.fen();
+  state.hinting = true;
+  state.hint = null;
+  state.error = null;
+  renderStatus();
+  try {
+    // senza "elo": Stockfish gioca alla massima forza
+    const res = await fetch('api/move', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fen, movetime: HINT_MOVETIME }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    if (!data.move) throw new Error('Stockfish non ha restituito una mossa');
+    if (game.fen() === fen) {
+      const m = data.move;
+      const san = new Chess(fen).move({ from: m.slice(0, 2), to: m.slice(2, 4), promotion: m[4] }).san;
+      state.hint = { fen, from: m.slice(0, 2), to: m.slice(2, 4), san };
+    }
+  } catch (err) {
+    if (game.fen() === fen) state.error = `Consiglio non disponibile: ${err.message}.`;
+  } finally {
+    state.hinting = false;
+  }
+  render();
+});
 
 // ---------------------------------------------------------------- Stockfish
 
@@ -270,6 +370,8 @@ async function engineMove() {
 function cancelPending() {
   state.runId++;
   state.thinking = false;
+  state.view = null;
+  state.hint = null;
   clearTimeout(state.timer);
 }
 

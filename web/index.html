@@ -16,10 +16,12 @@
       <h1>Scacchi</h1>
       <p id="mode-label" class="mode-label"></p>
       <p id="status" class="status" aria-live="polite"></p>
+      <p id="hint-text" class="hint-text" hidden></p>
       <p id="error" class="error" hidden></p>
 
       <div class="controls">
         <button id="btn-new" type="button">Nuova partita</button>
+        <button id="btn-hint" type="button">Consiglia mossa</button>
         <button id="btn-undo" type="button">Annulla mossa</button>
         <button id="btn-flip" type="button">Gira scacchiera</button>
         <button id="btn-pause" type="button" hidden>Pausa</button>
@@ -27,6 +29,14 @@
         <button id="btn-retry" type="button" hidden>Riprova</button>
         <button id="btn-colors" type="button">Colori</button>
       </div>
+
+      <div class="nav" role="group" aria-label="Rivedi le mosse">
+        <button id="nav-start" type="button" aria-label="Inizio partita" title="Inizio partita">⏮</button>
+        <button id="nav-prev" type="button" aria-label="Mossa precedente" title="Mossa precedente (←)">◀</button>
+        <button id="nav-next" type="button" aria-label="Mossa successiva" title="Mossa successiva (→)">▶</button>
+        <button id="nav-end" type="button" aria-label="Posizione attuale" title="Posizione attuale">⏭</button>
+      </div>
+      <p id="view-text" class="view-text" hidden></p>
 
       <ol id="moves" class="moves"></ol>
     </aside>

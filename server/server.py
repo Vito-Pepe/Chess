@@ -2,6 +2,7 @@
 
 POST /api/move  {"fen": "...", "elo": 1500, "movetime": 500}
              -> {"move": "e2e4"}
+Senza "elo" (o con null) Stockfish gioca alla massima forza.
 
 Solo libreria standard. Un unico processo Stockfish serve una richiesta alla
 volta (lock): niente picchi di carico, adatto a un Raspberry Pi.
@@ -45,8 +46,11 @@ class Engine:
 
     def best_move(self, fen, elo, movetime):
         self.send("ucinewgame")
-        self.send("setoption name UCI_LimitStrength value true")
-        self.send(f"setoption name UCI_Elo value {elo}")
+        if elo is None:  # massima forza (mossa consigliata)
+            self.send("setoption name UCI_LimitStrength value false")
+        else:
+            self.send("setoption name UCI_LimitStrength value true")
+            self.send(f"setoption name UCI_Elo value {elo}")
         self.send(f"position fen {fen}")
         self.send(f"go movetime {movetime}")
         parts = self.wait_for("bestmove").split()
@@ -90,7 +94,9 @@ class Handler(BaseHTTPRequestHandler):
             fen = str(req["fen"])
             if "\n" in fen or "\r" in fen:
                 raise ValueError("fen non valido")
-            elo = max(ELO_MIN, min(ELO_MAX, int(req.get("elo", 1500))))
+            elo = req.get("elo")
+            if elo is not None:
+                elo = max(ELO_MIN, min(ELO_MAX, int(elo)))
             movetime = max(50, min(MAX_MOVETIME, int(req.get("movetime", 500))))
         except (KeyError, ValueError, TypeError, json.JSONDecodeError) as e:
             return self._reply(400, {"error": str(e)})

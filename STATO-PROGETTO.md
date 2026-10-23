@@ -4,12 +4,12 @@ Ultimo aggiornamento: 2026-10-23. Serve per riprendere il lavoro in una nuova se
 
 ## Obiettivo
 
-Gioco di scacchi per uso personale sul Raspberry Pi 5, con Stockfish come avversario. Modalità: vs Stockfish (colore bianco/nero/casuale, Elo 1350–2850, tempo di riflessione), 2 giocatori sullo stesso dispositivo, Stockfish vs Stockfish (pausa tra le mosse, pausa/stop). Colori di pezzi e case personalizzabili, salvati nel browser.
+Gioco di scacchi per uso personale sul Raspberry Pi 5, con Stockfish come avversario. Modalità: vs Stockfish (colore bianco/nero/casuale, Elo 1350–2850, tempo di riflessione), 2 giocatori sullo stesso dispositivo, Stockfish vs Stockfish (pausa tra le mosse, pausa/stop). Colori di pezzi e case personalizzabili, salvati nel browser. Si può rivedere la partita mossa per mossa (⏮ ◀ ▶ ⏭, frecce della tastiera, clic sulla lista mosse) e chiedere a Stockfish la mossa consigliata per chi deve muovere.
 
 ## Stato attuale
 
-- Codice completo sul branch `claude/scacchi-stockfish`, PR verso `main` aperta.
-- Provato in cloud: API con Stockfish 16, interfaccia con Playwright (mosse, promozione, matto, annulla, SvS con pausa/stop, colori, errore di rete, layout telefono).
+- Prima versione in `main` (PR #1). Revisione mosse e mossa consigliata nella PR #2.
+- Provato in cloud: API con Stockfish 16, interfaccia con Playwright (mosse, promozione, matto, annulla, SvS con pausa/stop, colori, errore di rete, layout telefono, revisione mosse, mossa consigliata per bianco e nero).
 - **Non ancora provato**: build Docker e avvio con `docker compose` sul Pi (in cloud non c'è Docker).
 - Da fare sul Pi dopo l'unione della PR: clone, `docker compose up --build -d`, riga di cron (vedi sotto).
 
@@ -23,7 +23,7 @@ Gioco di scacchi per uso personale sul Raspberry Pi 5, con Stockfish come avvers
 | Compose | `docker-compose.yml` | Servizi `web` (porta **8085**) e `stockfish` (`cpus: 2`, `SF_THREADS=2`, `SF_HASH_MB=64`). |
 | Aggiornamento | `update.sh` | Come nelle altre repo: se ci sono commit nuovi sul branch corrente fa pull, rebuild, riavvio. |
 
-API: `POST /api/move` `{"fen", "elo", "movetime"}` → `{"move": "e2e4"}` (`null` se non ci sono mosse legali). `GET /api/health` → `{"ok": true}`.
+API: `POST /api/move` `{"fen", "elo", "movetime"}` → `{"move": "e2e4"}` (`null` se non ci sono mosse legali). Senza `elo` gioca alla massima forza: lo usa "Consiglia mossa" (1 s di riflessione). `GET /api/health` → `{"ok": true}`.
 
 ## Il Raspberry Pi e le porte già in uso
 
@@ -72,6 +72,7 @@ Come per le altre repo: modifiche su un branch, pull request verso `main`, union
 
 ## Da fare
 
-- [ ] Unire la PR e fare il primo deploy sul Pi.
+- [x] Unire la PR #1.
+- [ ] Unire la PR #2 e fare il primo deploy sul Pi.
 - [ ] Aggiungere la riga di cron per `update.sh`.
 - [ ] (Opzionale) Riquadro Scacchi nella homepage: una riga in `app/apps.js` della repo homepage con `lanPort: 8085`.
