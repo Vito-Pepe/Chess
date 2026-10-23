@@ -23,31 +23,28 @@ API: `POST /api/move` con `{"fen": "...", "elo": 1500, "movetime": 500}` → `{"
 
 ## Deploy sul Raspberry Pi 5
 
-1. Installa Docker (Raspberry Pi OS 64 bit):
-   ```sh
-   curl -fsSL https://get.docker.com | sh
-   sudo usermod -aG docker $USER   # poi esci e rientra
-   ```
-2. Clona la repo e avvia:
-   ```sh
-   git clone https://github.com/Vito-Pepe/Chess.git
-   cd Chess
-   docker compose up --build -d
-   ```
-3. Apri `http://<ip-del-pi>/` dal browser.
-
-Per aggiornare: `git pull && docker compose up --build -d`.
-
-### Accesso da fuori casa
-
-Usa [Tailscale](https://tailscale.com) sul Pi e sui tuoi dispositivi: nessuna porta da aprire sul router.
+Stesso schema delle altre app sul Pi (sillabe, homepage, parole): Docker e Tailscale già installati, il Pi segue `main` e si aggiorna da solo con `update.sh` via cron. L'app usa la porta **8085** (8080–8084 sono già occupate).
 
 ```sh
-curl -fsSL https://tailscale.com/install.sh | sh
-sudo tailscale up
+cd ~
+git clone https://github.com/Vito-Pepe/Chess.git
+cd Chess
+docker compose up --build -d
+curl http://127.0.0.1:8085/api/health   # {"ok": true}
 ```
 
-Poi apri `http://<nome-del-pi>/` (o l'IP Tailscale) da telefono o computer collegati alla stessa tailnet.
+Aggiornamento automatico ogni 5 minuti (`crontab -e`, senza `sudo`):
+
+```
+*/5 * * * * cd /home/pepe/Chess && ./update.sh >> /home/pepe/Chess/update.log 2>&1
+```
+
+Aggiornamento a mano: `cd ~/Chess && ./update.sh`.
+
+### Indirizzi
+
+- In casa: `http://192.168.1.22:8085`
+- Da fuori casa, con Tailscale: `http://vito:8085` (il traffico è già cifrato da Tailscale, come per Parole su 8082). Non serve `tailscale serve`, le cui porte HTTPS sono già usate dalle altre app.
 
 ### Carico e temperatura
 

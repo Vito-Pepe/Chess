@@ -2,7 +2,8 @@ services:
   web:
     build: .
     ports:
-      - "80:80"
+      # 8080-8084 sono già usate sul Pi (sillabe, homepage, parole)
+      - "8085:80"
     depends_on:
       - stockfish
     restart: unless-stopped
