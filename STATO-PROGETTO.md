@@ -8,10 +8,9 @@ Gioco di scacchi per uso personale sul Raspberry Pi 5, con Stockfish come avvers
 
 ## Stato attuale
 
-- Prima versione in `main` (PR #1). Revisione mosse, mossa consigliata e livelli 1–10 nella PR #2.
-- Provato in cloud: API con Stockfish 16, interfaccia con Playwright (mosse, promozione, matto, annulla, SvS con pausa/stop, colori, errore di rete, layout telefono, revisione mosse, mossa consigliata per bianco e nero).
-- **Non ancora provato**: build Docker e avvio con `docker compose` sul Pi (in cloud non c'è Docker).
-- Da fare sul Pi dopo l'unione della PR: clone, `docker compose up --build -d`, riga di cron (vedi sotto).
+- **In produzione sul Pi** dal 2026-10-23: tutto in `main` (PR #1 prima versione, PR #2 revisione mosse, mossa consigliata e livelli 1–10). Cron di `update.sh` attivo.
+- Provato in cloud: API con Stockfish 16, interfaccia con Playwright (mosse, promozione, matto, annulla, SvS con pausa/stop, colori, errore di rete, layout telefono, revisione mosse, mossa consigliata per bianco e nero, livelli).
+- Provato sul Pi: build Docker, `docker compose`, API e gioco funzionano.
 
 ## Architettura
 
@@ -90,6 +89,6 @@ Come per le altre repo: modifiche su un branch, pull request verso `main`, union
 ## Da fare
 
 - [x] Unire la PR #1.
-- [ ] Unire la PR #2 e fare il primo deploy sul Pi.
-- [ ] Aggiungere la riga di cron per `update.sh`.
+- [x] Unire la PR #2 e fare il primo deploy sul Pi.
+- [x] Aggiungere la riga di cron per `update.sh`.
 - [ ] (Opzionale) Riquadro Scacchi nella homepage: una riga in `app/apps.js` della repo homepage con `lanPort: 8085`.
