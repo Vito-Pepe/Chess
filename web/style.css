@@ -17,6 +17,7 @@
   --last: rgba(155, 199, 0, 0.45);
   --check: rgba(220, 30, 30, 0.75);
   --hint: rgba(0, 0, 0, 0.25);
+  --suggest: rgba(25, 110, 255, 0.9);
 
   --board-size: min(92vw, 78vh, 600px);
   color-scheme: light dark;
@@ -96,6 +97,8 @@ body {
 .sq.last::before { background: var(--last); }
 .sq.selected::before { background: var(--select); }
 .sq.check::before { background: radial-gradient(circle, var(--check) 0%, transparent 72%); }
+
+.sq.suggest { box-shadow: inset 0 0 0 calc(var(--board-size) / 100) var(--suggest); }
 
 .sq.hint::after {
   content: "";
@@ -183,7 +186,20 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
   font-variant-numeric: tabular-nums;
 }
 .moves li { padding: 2px 0; }
-.moves li span { display: inline-block; min-width: 4.5em; }
+.moves li span {
+  display: inline-block;
+  min-width: 4.5em;
+  padding: 1px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.moves li span:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.moves li span.current { background: var(--accent); color: #fff; }
+
+.nav { display: flex; gap: 6px; margin-bottom: 8px; }
+.nav button { flex: 1; padding: 6px 0; }
+.view-text { margin: 0 0 8px; font-size: 0.9rem; color: var(--muted); }
+.hint-text { margin: 0 0 8px; color: var(--suggest); font-weight: 600; }
 
 /* ---------- dialoghi ---------- */
 

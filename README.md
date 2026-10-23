@@ -2,10 +2,12 @@
 
 Gioco di scacchi per uso personale, pensato per girare su un Raspberry Pi 5, con Stockfish come avversario.
 
-- **Vs Stockfish**: scegli bianco, nero o casuale, forza (1350–2850 Elo) e tempo di riflessione.
+- **Vs Stockfish**: scegli bianco, nero o casuale, livello da 1 (Principiante) a 10 (piena forza) e tempo di riflessione.
 - **2 giocatori** sullo stesso dispositivo.
-- **Stockfish vs Stockfish**: Elo diverso per i due lati, pausa tra le mosse, pausa/stop.
+- **Stockfish vs Stockfish**: livello diverso per i due lati, pausa tra le mosse, pausa/stop.
 - **Colori personalizzabili** di pezzi e case (preset inclusi), salvati nel browser.
+- **Rivedi la partita** mossa per mossa (⏮ ◀ ▶ ⏭, frecce della tastiera o clic su una mossa della lista).
+- **Consiglia mossa**: Stockfish alla massima forza suggerisce la mossa a chi deve muovere, bianco o nero.
 
 Le regole (mosse legali, scacco matto, patte) sono gestite nel browser da [chess.js](https://github.com/jhlywa/chess.js) 1.0.0 (licenza BSD-2-Clause, copiato in `web/vendor/`). Stockfish gira in un piccolo servizio Python che serve una richiesta alla volta, per non sovraccaricare il Pi.
 
@@ -13,13 +15,13 @@ Le regole (mosse legali, scacco matto, patte) sono gestite nel browser da [chess
 
 ```
 Dockerfile           # web: nginx:alpine con i file di web/
-docker-compose.yml   # servizi web (porta 80) + stockfish
+docker-compose.yml   # servizi web (porta 8085) + stockfish
 nginx.conf           # serve web/ e inoltra /api/ al servizio stockfish
 web/                 # frontend statico (index.html, style.css, app.js)
 server/              # API Stockfish (Python, solo libreria standard)
 ```
 
-API: `POST /api/move` con `{"fen": "...", "elo": 1500, "movetime": 500}` → `{"move": "e2e4"}` (`null` se non ci sono mosse). `GET /api/health` → `{"ok": true}`.
+API: `POST /api/move` con `{"fen": "...", "level": 4, "movetime": 500}` → `{"move": "e2e4"}` (`null` se non ci sono mosse). `level` va da 1 a 10 (tabella `LEVELS` in `server/server.py`); senza `level` Stockfish gioca alla massima forza. `GET /api/health` → `{"ok": true}`.
 
 ## Deploy sul Raspberry Pi 5
 
