@@ -1,6 +1,6 @@
 # Stato del progetto: Scacchi vs Stockfish
 
-Ultimo aggiornamento: 2026-10-23. Serve per riprendere il lavoro in una nuova sessione.
+Ultimo aggiornamento: 2026-11-07. Serve per riprendere il lavoro in una nuova sessione.
 
 ## Obiettivo
 
@@ -19,7 +19,7 @@ Gioco di scacchi per uso personale sul Raspberry Pi 5, con Stockfish come avvers
 | Frontend statico | `web/` | `index.html`, `style.css`, `app.js` (modulo ES). Regole con chess.js 1.0.0 in `web/vendor/` (BSD-2-Clause). |
 | API Stockfish | `server/server.py` | Python, solo libreria standard. Un solo processo Stockfish con lock: una richiesta alla volta. `movetime` max 5 s. Livelli in `LEVELS` (vedi sotto). |
 | Servizio web | `Dockerfile`, `nginx.conf` | nginx:alpine, serve `web/` e inoltra `/api/` a `stockfish:8000` (resolver Docker, parte anche se Stockfish non è pronto). |
-| Compose | `docker-compose.yml` | Servizi `web` (porta **8085**) e `stockfish` (`cpus: 2`, `SF_THREADS=2`, `SF_HASH_MB=64`). |
+| Compose | `docker-compose.yml` | Servizi `web` (porta **8085**) e `stockfish` (`cpus: 2`, `SF_THREADS=2`, `SF_HASH_MB=64`). Tutti e due con un `healthcheck` ogni minuto (`web`: `/` con `wget`; `stockfish`: `/api/health` con Python, perché l'immagine non ha `wget`): se uno si blocca diventa `unhealthy` e il guardiano del Pi (repo `guardiano`) lo riavvia. |
 | Aggiornamento | `update.sh` | Come nelle altre repo: se ci sono commit nuovi sul branch corrente fa pull, rebuild, riavvio. |
 
 Editor (`web/app.js`, sezione "posizione libera"): la posizione è una mappa casa → pezzo; la FEN si costruisce al volo (arrocco dedotto da re e torri nelle case iniziali, niente en passant). Prima di chiedere la mossa controlla: un re per colore, nessun pedone in prima/ottava, re di chi non muove non sotto scacco, niente matto/stallo.
