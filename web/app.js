@@ -7,7 +7,13 @@ const MODE_NAMES = { pvp: '2 giocatori', pve: 'Vs Stockfish', eve: 'Stockfish vs
 // Livelli di Stockfish, dal più scarso al più forte (la forza vera è definita in server/server.py)
 const LEVEL_NAMES = [, 'Principiante', 'Novizio', 'Facile', 'Dilettante', 'Intermedio',
   'Giocatore di circolo', 'Esperto', 'Maestro', 'Gran maestro', 'Massimo (piena forza)'];
-const levelName = (n) => `${n} · ${LEVEL_NAMES[n]}`;
+// Elo indicativo dei livelli: lo calcola il server per la versione di Stockfish che usa
+// (GET /api/levels). Il livello 10 gioca a piena forza, oltre il massimo della taratura.
+let levelElo = null;
+// (spazi che non vanno a capo: "≈1600 Elo" resta tutto su una riga)
+const eloText = (n, unit = '\u00a0Elo') => (levelElo.elo[n] ? `≈${levelElo.elo[n]}${unit}` : `oltre\u00a0${levelElo.max}${unit}`);
+const levelName = (n) => `${n} · ${LEVEL_NAMES[n]}${levelElo ? ` · ${eloText(n)}` : ''}`;
+const levelShort = (n) => (levelElo ? `${n} (${eloText(n, '')})` : `${n}`);
 
 const $ = (sel) => document.querySelector(sel);
 const boardEl = $('#board');
@@ -152,7 +158,7 @@ function renderStatus() {
 
   let label = MODE_NAMES[state.mode];
   if (state.mode === 'pve') label += ` · giochi col ${state.human === 'w' ? 'bianco' : 'nero'} · livello ${levelName(state.level)}`;
-  if (state.mode === 'eve') label += ` · livello ${state.levelW} vs ${state.levelB}`;
+  if (state.mode === 'eve') label += ` · livello ${levelShort(state.levelW)} vs ${levelShort(state.levelB)}`;
   $('#mode-label').textContent = label;
 
   const total = game.history().length;
@@ -818,3 +824,14 @@ applyColors();
 render();
 syncNewForm();
 dlgNew.showModal();
+
+// Elo dei livelli dal server: se non risponde i livelli restano senza
+fetch('/api/levels')
+  .then((r) => (r.ok ? r.json() : null))
+  .then((d) => {
+    if (!d?.elo) return;
+    levelElo = d;
+    syncNewForm();
+    if (state.mode !== 'edit') renderStatus();
+  })
+  .catch(() => {});

@@ -1,6 +1,6 @@
 # Stato del progetto: Scacchi vs Stockfish
 
-Ultimo aggiornamento: 2026-11-07. Serve per riprendere il lavoro in una nuova sessione.
+Ultimo aggiornamento: 2026-11-20. Serve per riprendere il lavoro in una nuova sessione.
 
 ## Obiettivo
 
@@ -9,6 +9,7 @@ Gioco di scacchi per uso personale sul Raspberry Pi 5, con Stockfish come avvers
 ## Stato attuale
 
 - **In produzione sul Pi** dal 2026-10-23: tutto in `main` (PR #1 prima versione, PR #2 revisione mosse, mossa consigliata e livelli 1–10). Cron di `update.sh` attivo.
+- 2026-11-20: Elo indicativi accanto ai livelli (`GET /api/levels`, vedi sotto "Elo dei livelli").
 - Provato in cloud: API con Stockfish 16, interfaccia con Playwright (mosse, promozione, matto, annulla, SvS con pausa/stop, colori, errore di rete, layout telefono, revisione mosse, mossa consigliata per bianco e nero, livelli, editor di posizione con mouse, tocchi e trascinamento touch).
 - Provato sul Pi: build Docker, `docker compose`, API e gioco funzionano.
 
@@ -24,24 +25,29 @@ Gioco di scacchi per uso personale sul Raspberry Pi 5, con Stockfish come avvers
 
 Editor (`web/app.js`, sezione "posizione libera"): la posizione è una mappa casa → pezzo; la FEN si costruisce al volo (arrocco dedotto da re e torri nelle case iniziali, niente en passant). Prima di chiedere la mossa controlla: un re per colore, nessun pedone in prima/ottava, re di chi non muove non sotto scacco, niente matto/stallo.
 
-API: `POST /api/move` `{"fen", "level", "movetime"}` → `{"move": "e2e4"}` (`null` se non ci sono mosse legali). Senza `level` gioca alla massima forza: lo usa "Consiglia mossa" (1 s di riflessione). Accetta anche `elo` (1350–2850), non usato dall'interfaccia.
+API: `POST /api/move` `{"fen", "level", "movetime"}` → `{"move": "e2e4"}` (`null` se non ci sono mosse legali). Senza `level` gioca alla massima forza: lo usa "Consiglia mossa" (1 s di riflessione). Accetta anche `elo` (1350–2850), non usato dall'interfaccia. `GET /api/levels` → `{"engine": "Stockfish 15.1", "elo": {"1": 350, …, "9": 2750}, "max": 2850}`: Elo dei livelli per la versione di Stockfish in uso (la legge dalla riga `id name` dell'UCI), mostrati nella pagina accanto ai nomi.
 
 ### Livelli di Stockfish
 
-| Livello | Nome | Impostazione |
-|---|---|---|
-| 1 | Principiante | Skill 0, profondità 1, 50% mosse casuali |
-| 2 | Novizio | Skill 0, profondità 1, 20% mosse casuali |
-| 3 | Facile | Skill 0, profondità 2 |
-| 4 | Dilettante | Skill 2, profondità 4 |
-| 5 | Intermedio | Skill 5 |
-| 6 | Giocatore di circolo | Skill 8 |
-| 7 | Esperto | Skill 11 |
-| 8 | Maestro | Skill 14 |
-| 9 | Gran maestro | Skill 17 |
-| 10 | Massimo | piena forza |
+| Livello | Nome | Impostazione | Elo con Stockfish 15.1 | Elo con Stockfish 16+ |
+|---|---|---|---|---|
+| 1 | Principiante | Skill 0, profondità 1, 50% mosse casuali | ≈350 | ≈350 |
+| 2 | Novizio | Skill 0, profondità 1, 20% mosse casuali | ≈750 | ≈750 |
+| 3 | Facile | Skill 0, profondità 2 | ≈1350 | ≈1350 |
+| 4 | Dilettante | Skill 2, profondità 4 | ≈1600 | ≈1550 |
+| 5 | Intermedio | Skill 5 | ≈1850 | ≈2200 |
+| 6 | Giocatore di circolo | Skill 8 | ≈2100 | ≈2600 |
+| 7 | Esperto | Skill 11 | ≈2350 | ≈2850 |
+| 8 | Maestro | Skill 14 | ≈2550 | ≈3000 |
+| 9 | Gran maestro | Skill 17 | ≈2750 | ≈3150 |
+| 10 | Massimo | piena forza | oltre 2850 | oltre 3190 |
 
-Verificato con partite tra livelli vicini (0,1 s a mossa): ogni livello batte nettamente il precedente. Le mosse casuali arrivano da `go perft 1` di Stockfish. Niente Elo indicativi: dipendono troppo dal tempo di riflessione. `GET /api/health` → `{"ok": true}`.
+Verificato con partite tra livelli vicini (0,1 s a mossa): ogni livello batte nettamente il precedente. Le mosse casuali arrivano da `go perft 1` di Stockfish. `GET /api/health` → `{"ok": true}`.
+
+**Elo dei livelli** (`levels_info` in `server/server.py`, arrotondati a 50). Sul Pi l'immagine `python:3.12-slim-bookworm` installa lo Stockfish di Debian bookworm (dovrebbe essere la 15.1; il server lo legge da solo). La scala è quella con cui Stockfish tara `UCI_Elo`: Elo CCRL dei motori (goldfish 1.13 = 2000), partite 60 s + 0,6 s. Non è FIDE né chess.com: la pagina lo dice sotto i livelli.
+- Livelli 3–9: la formula di Stockfish (struttura `Skill` in `search.cpp`) al contrario. Fino alla 15.1: Elo = 1346,6 + 143,4 × skill^0,806 (UCI_Elo 1350–2850). Dalla 16: e = (Elo − 1320) / 1870 con skill = ((37,2473 e − 40,8525) e + 22,2943) e − 0,311438 (UCI_Elo 1320–3190). Lo Skill Level sceglie la mossa alla profondità 1 + skill, quindi questi Elo non dipendono dal tempo di riflessione; i limiti di profondità dei livelli 3 e 4 sono sopra quella profondità e non cambiano niente.
+- Livelli 1 e 2: le mosse casuali Stockfish non le conosce. Misurato in cloud con Stockfish 16, 400 partite per coppia a 0,1 s a mossa, con il codice del server: il 3 batte il 2 di +576 Elo (95%: 510–680), il 2 batte l'1 di +436 (383–508), il 3 batte l'1 di +920 (200 partite, 199 vinte). Nel server: −575 e −1000 rispetto allo Skill 0 (`RANDOM_ELO_DROP`). Sono stime più grezze: nelle stesse partite il 4 batte il 3 di +126 (93–161), contro i +250 della formula ufficiale.
+- Livello 10: piena forza, dipende da tempo e hardware; si scrive solo "oltre" il massimo di `UCI_Elo`.
 
 ## Il Raspberry Pi e le porte già in uso
 

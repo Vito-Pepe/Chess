@@ -2,7 +2,7 @@
 
 Gioco di scacchi per uso personale, pensato per girare su un Raspberry Pi 5, con Stockfish come avversario.
 
-- **Vs Stockfish**: scegli bianco, nero o casuale, livello da 1 (Principiante) a 10 (piena forza) e tempo di riflessione.
+- **Vs Stockfish**: scegli bianco, nero o casuale, livello da 1 (Principiante) a 10 (piena forza) e tempo di riflessione. Accanto a ogni livello c'è il suo Elo indicativo (per esempio "4 · Dilettante · ≈1600 Elo"), sulla scala con cui Stockfish tara i suoi livelli (lista CCRL dei programmi, non FIDE).
 - **2 giocatori** sullo stesso dispositivo.
 - **Stockfish vs Stockfish**: livello diverso per i due lati, pausa tra le mosse, pausa/stop.
 - **Colori personalizzabili** di pezzi e case (preset inclusi), salvati nel browser.
@@ -22,7 +22,7 @@ web/                 # frontend statico (index.html, style.css, app.js)
 server/              # API Stockfish (Python, solo libreria standard)
 ```
 
-API: `POST /api/move` con `{"fen": "...", "level": 4, "movetime": 500}` → `{"move": "e2e4"}` (`null` se non ci sono mosse). `level` va da 1 a 10 (tabella `LEVELS` in `server/server.py`); senza `level` Stockfish gioca alla massima forza. `GET /api/health` → `{"ok": true}`.
+API: `POST /api/move` con `{"fen": "...", "level": 4, "movetime": 500}` → `{"move": "e2e4"}` (`null` se non ci sono mosse). `level` va da 1 a 10 (tabella `LEVELS` in `server/server.py`); senza `level` Stockfish gioca alla massima forza. `GET /api/levels` → Elo dei livelli per la versione di Stockfish in uso (come si calcolano: `STATO-PROGETTO.md`). `GET /api/health` → `{"ok": true}`.
 
 ## Deploy sul Raspberry Pi 5
 

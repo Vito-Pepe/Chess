@@ -5,6 +5,10 @@ POST /api/move  {"fen": "...", "level": 5, "movetime": 500}
 "level" va da 1 (più scarso) a 10 (massima forza), vedi LEVELS. In
 alternativa "elo" (1350-2850). Senza nessuno dei due: massima forza.
 
+GET /api/levels -> {"engine": "Stockfish 15.1", "elo": {"1": 450, ...}, "max": 2850}
+Elo indicativo dei livelli da 1 a 9 per la versione di Stockfish in uso (vedi
+levels_info); il 10 gioca a piena forza, oltre "max".
+
 Solo libreria standard. Un unico processo Stockfish serve una richiesta alla
 volta (lock): niente picchi di carico, adatto a un Raspberry Pi.
 """
@@ -38,6 +42,50 @@ LEVELS = {
     10: {},  # massima forza
 }
 
+# Elo dei livelli, sulla scala con cui Stockfish tara UCI_Elo: Elo CCRL dei motori
+# (goldfish 1.13 = 2000), partite 60 s + 0,6 s. Non è la scala FIDE né quella di
+# chess.com. Lo Skill Level sceglie sempre la mossa alla profondità 1 + skill,
+# quindi fino al livello 9 la forza non dipende dal tempo di riflessione.
+# Le mosse casuali dei livelli 1 e 2 Stockfish non le conosce: quanto tolgono
+# l'abbiamo misurato con partite tra i livelli (400 per coppia, 0,1 s a mossa):
+# il 3 (Skill 0 senza mosse casuali) batte il 2 di 576 Elo, il 2 batte l'1 di
+# 436. Sono stime più grezze delle altre: nelle stesse partite il 4 batte il 3
+# di 126 Elo, contro i 250 della formula di Stockfish. Vedi STATO-PROGETTO.md.
+RANDOM_ELO_DROP = {1: 1000, 2: 575}
+
+
+def skill_elo(skill, version):
+    """Elo che Stockfish fa corrispondere a uno Skill Level (struttura Skill in
+    search.cpp), con la formula al contrario. version: 15 per Stockfish 15.1,
+    None se non si sa (si usa quella di oggi)."""
+    if version is not None and version < 16:
+        # fino alla 15.1: skill = ((Elo - 1346,6) / 143,4) ^ (1 / 0,806)
+        return 1346.6 + 143.4 * skill ** 0.806
+    # dalla 16: e = (Elo - 1320) / (3190 - 1320),
+    # skill = ((37,2473 e - 40,8525) e + 22,2943) e - 0,311438 (sempre crescente)
+    lo, hi = 0.0, 2.0
+    for _ in range(60):
+        e = (lo + hi) / 2
+        if ((37.2473 * e - 40.8525) * e + 22.2943) * e - 0.311438 < skill:
+            lo = e
+        else:
+            hi = e
+    return 1320 + lo * (3190 - 1320)
+
+
+def levels_info(engine_name):
+    """Elo dei livelli, arrotondati a 50, per il motore che si presenta così."""
+    m = re.match(r"Stockfish (\d+)", engine_name or "")
+    version = int(m.group(1)) if m else None
+    elo = {}
+    for n, strength in LEVELS.items():
+        if "skill" in strength:
+            e = skill_elo(strength["skill"], version) - RANDOM_ELO_DROP.get(n, 0)
+            elo[str(n)] = int(round(e / 50) * 50)
+    # Il livello 10 gioca a piena forza: oltre il massimo di UCI_Elo
+    return {"engine": engine_name, "elo": elo, "max": 2850 if version is not None and version < 16 else 3190}
+
+
 MOVE_RE = re.compile(r"^([a-h][1-8][a-h][1-8][qrbn]?):")  # righe di "go perft 1"
 
 lock = threading.Lock()
@@ -49,6 +97,7 @@ class Engine:
             [STOCKFISH], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL, text=True, bufsize=1)
         self.send("uci")
+        self.name = self.wait_for("id name")[len("id name "):]  # "Stockfish 15.1"
         self.wait_for("uciok")
         self.send(f"setoption name Threads value {THREADS}")
         self.send(f"setoption name Hash value {HASH_MB}")
@@ -120,6 +169,13 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/api/health":
             self._reply(200, {"ok": True})
+        elif self.path == "/api/levels":
+            try:
+                with lock:
+                    name = get_engine().name
+            except Exception as e:
+                return self._reply(500, {"error": str(e)})
+            self._reply(200, levels_info(name))
         else:
             self._reply(404, {"error": "not found"})
 
